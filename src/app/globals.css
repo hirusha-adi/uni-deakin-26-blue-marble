@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #172d29;
+  --color-muted: #60716b;
+  --color-brand: #075c48;
+  --color-line: #e1e7e1;
+  --font-sans: "Inter", "Segoe UI", Arial, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+@layer base {
+  body { @apply m-0 bg-[#f8faf8] font-sans text-ink antialiased; }
+  button:not(:disabled), [role="tab"]:not(:disabled) { cursor: pointer; }
+  button, input, textarea, select { @apply outline-none; }
+  button:focus-visible, a:focus-visible { @apply outline-2 outline-offset-4 outline-brand; }
+  input:focus-visible, textarea:focus-visible, select:focus-visible { @apply border-brand ring-3 ring-brand/10; }
+  ::selection { @apply bg-[#cfecd7] text-brand; }
+  input[type="range"] { accent-color: #075c48; }
+  input[type="checkbox"] { accent-color: #075c48; }
+  summary { @apply cursor-pointer rounded text-sm font-medium text-ink; }
+  summary:focus-visible { @apply outline-2 outline-offset-4 outline-brand; }
+}
+
+@layer components {
+  .panel { @apply rounded-xl border border-line bg-white; }
+  .field-label { @apply mb-2 block text-sm font-medium text-ink; }
+  .input-field { @apply w-full min-w-0 rounded-lg border border-[#dce3db] bg-[#fcfdfb] px-3.5 py-3 text-sm text-ink transition placeholder:text-muted/70; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#064b3b] disabled:cursor-not-allowed disabled:opacity-45; }
+  .btn-secondary { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-white px-4 py-3 text-sm font-medium text-ink transition hover:border-[#bccdc0] hover:bg-[#f4f7f1] disabled:cursor-not-allowed disabled:opacity-45; }
+  .code-panel { @apply overflow-hidden rounded-lg border border-line bg-[#f4f6f4] font-mono text-sm leading-relaxed text-ink; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

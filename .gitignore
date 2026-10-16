@@ -77,6 +77,10 @@ web_modules/
 # Next.js build output
 .next
 out
+next-env.d.ts
+
+# Prepared locally from the installed sql.js package before dev/build
+public/sql-wasm.wasm
 
 # Nuxt.js build / generate output
 .nuxt
@@ -141,6 +145,10 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Browser verification artifacts
+test-results/
+playwright-report/
 
 # Astro generated types
 .astro/

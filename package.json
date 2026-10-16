@@ -1,0 +1,36 @@
+{
+  "name": "blue-marble-security-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/prepare-sql-wasm.mjs",
+    "dev": "next dev --webpack --hostname 127.0.0.1",
+    "prebuild": "node scripts/prepare-sql-wasm.mjs",
+    "build": "next build --webpack",
+    "start": "next start --hostname 127.0.0.1",
+    "preview": "next start --hostname 127.0.0.1 --port 4173",
+    "typecheck": "next typegen --webpack && tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "next": "^16.4.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sql.js": "^1.13.0",
+    "zxcvbn": "^4.4.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/sql.js": "^1.4.9",
+    "@types/zxcvbn": "^4.4.5",
+    "tailwindcss": "^4.1.0",
+    "typescript": "~5.7.3",
+    "vitest": "^5.0.4"
+  }
+}
