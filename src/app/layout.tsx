@@ -1,14 +1,17 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
+import '@fontsource/roboto/latin-400.css'
+import '@fontsource/roboto/latin-500.css'
+import '@fontsource/roboto/latin-700.css'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Blue Marble 2026 · Security Lab',
-  description: 'Hands-on cybersecurity demos for the Blue Marble Study Tour 2026. Explore password attacks, XSS, and SQL injection entirely in your browser.',
+  title: 'Blue Marble Study Tour 2026 · Security Lab',
+  description: 'Hands-on cybersecurity demos for the Blue Marble Study Tour 2026. Password attacks, injection attacks, and more — all in your browser.',
   icons: { icon: '/favicon.svg' },
 }
 
-export const viewport: Viewport = { themeColor: '#075c48' }
+export const viewport: Viewport = { themeColor: '#3f51b5' }
 
 // Keep the XSS lesson isolated while allowing Next's local development tools.
 const isDevelopment = process.env.NODE_ENV === 'development'

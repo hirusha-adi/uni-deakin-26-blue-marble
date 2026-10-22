@@ -37,3 +37,4 @@ describe('browser SQLite login demonstration', () => {
     expect(runSqlLogin(SQL, payload, 'wrong-password', 'protected').status).toBe('rejected')
   })
 })
+

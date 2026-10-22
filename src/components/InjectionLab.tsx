@@ -1,14 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
+import { useFeedbackMotion } from '../hooks/useFeedbackMotion'
 import { buildLoginQuery, runSqlLogin, SQL_ATTACK_USERNAME, SQL_DEMO_PASSWORD, SQL_DEMO_USERNAME, SQL_INPUT_MAX_LENGTH, type SqlLoginResult, type SqlMode } from '../lib/sqlDemo'
 import { loadSqlEngine } from '../lib/sqlEngine'
 import { buildXssDocument, readXssMessage, XSS_MAX_LENGTH, XSS_PAYLOAD, XSS_PLAIN_COMMENT, XSS_SANDBOX } from '../lib/xssDemo'
 
 function ProtectionToggle({ checked, onChange, disabled = false }: { checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }) {
   return (
-    <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
-      <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-brand" />
+    <label className={`flex w-fit items-center gap-2 py-1 text-sm ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand" />
       Protection on
     </label>
+  )
+}
+
+function StatusHeader({ left, right }: { left: React.ReactNode; right: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3 sm:px-6">
+      <div className="flex items-center gap-2">{left}</div>
+      {right}
+    </div>
   )
 }
 
@@ -20,6 +30,9 @@ function XssDemo() {
   const [didRun, setDidRun] = useState(false)
   const [scriptMessage, setScriptMessage] = useState<string | null>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const feedbackRef = useRef<HTMLDivElement>(null)
+  const feedbackTrigger = scriptMessage !== null ? `${runId}:${scriptMessage}` : didRun && protectedMode ? runId : null
+  useFeedbackMotion(feedbackRef, feedbackTrigger, feedbackTrigger !== null)
 
   useEffect(() => {
     const receiveMessage = (event: MessageEvent<unknown>) => {
@@ -56,39 +69,59 @@ function XssDemo() {
     clearPreview()
   }
 
+  const pill = scriptMessage !== null
+    ? <span className="pill pill-danger">Script executed</span>
+    : didRun && protectedMode
+      ? <span className="pill pill-success">Displayed as text</span>
+      : didRun
+        ? <span className="pill pill-brand">Comment posted</span>
+        : <span className="pill pill-neutral">Ready</span>
+
   return (
-    <div className="panel p-5 sm:p-6">
-      <p className="mb-6 text-sm leading-relaxed text-muted">Try a comment that makes a page run JavaScript, then turn protection on and try again.</p>
-      <div className="grid items-start gap-6 md:grid-cols-2">
-        <div>
-          <label htmlFor="xss-comment" className="field-label">Your noticeboard comment</label>
-          <textarea id="xss-comment" className="input-field min-h-32 resize-y font-mono text-sm leading-relaxed" value={comment} maxLength={XSS_MAX_LENGTH} onChange={(event) => setComment(event.target.value)} spellCheck={false} />
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button className="btn-secondary" type="button" onClick={() => setComment(XSS_PAYLOAD)}>Try an XSS payload</button>
-            <button className="btn-secondary" type="button" onClick={() => setComment(XSS_PLAIN_COMMENT)}>Normal comment</button>
+    <div className="panel overflow-hidden">
+      <StatusHeader
+        left={<span className="text-xs text-muted">Fictional noticeboard · sandboxed</span>}
+        right={pill}
+      />
+      <div className="grid items-start gap-6 p-5 sm:p-6 md:grid-cols-2">
+        <section className="space-y-4">
+          <div>
+            <label htmlFor="xss-comment" className="field-label">Your noticeboard comment</label>
+            <textarea id="xss-comment" className="input-field min-h-36 resize-y font-mono text-sm leading-relaxed" value={comment} maxLength={XSS_MAX_LENGTH} onChange={(event) => setComment(event.target.value)} spellCheck={false} />
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <span className="text-muted">Try:</span>
+              <button className="btn-ghost" type="button" onClick={() => setComment(XSS_PLAIN_COMMENT)}>Normal comment</button>
+              <button className="btn-ghost" type="button" onClick={() => setComment(XSS_PAYLOAD)}>XSS payload</button>
+            </div>
           </div>
-          <div className="mt-5"><ProtectionToggle checked={protectedMode} onChange={changeProtection} /></div>
-          <div className="mt-5 flex gap-2">
+          <ProtectionToggle checked={protectedMode} onChange={changeProtection} />
+          <div className="flex gap-2">
             <button type="button" className="btn-primary" onClick={runComment}>Run</button>
             <button type="button" className="btn-secondary" onClick={reset}>Reset</button>
           </div>
-        </div>
-        <div>
+        </section>
+        <section className="space-y-3">
           <p className="field-label">What the page shows</p>
-          <iframe key={runId} ref={iframeRef} title="Isolated XSS noticeboard demonstration" sandbox={XSS_SANDBOX} srcDoc={frameDocument} referrerPolicy="no-referrer" className="block h-[270px] w-full rounded-lg border border-line" />
-          <div aria-live="polite" className="mt-3 min-h-10 text-sm leading-relaxed">
-            {scriptMessage !== null ? <p className="text-[#9a4b20]"><strong>JavaScript executed.</strong> Demo alert: {scriptMessage}</p> : didRun && protectedMode ? <p className="text-brand"><strong>Displayed as text.</strong> The code did not run.</p> : didRun ? <p className="text-muted">Comment posted.</p> : <p className="text-muted">Click Run to post your comment.</p>}
+          <iframe key={runId} ref={iframeRef} title="Isolated XSS noticeboard demonstration" sandbox={XSS_SANDBOX} srcDoc={frameDocument} referrerPolicy="no-referrer" className="block h-[270px] w-full rounded border border-line bg-surface" />
+          <div ref={feedbackRef} aria-live="polite" className="min-h-10 text-sm leading-relaxed">
+            {scriptMessage !== null
+              ? <p data-motion-result className="text-danger"><strong>JavaScript executed.</strong> Demo alert: {scriptMessage}</p>
+              : didRun && protectedMode
+                ? <p data-motion-result className="text-success"><strong>Displayed as text.</strong> The code did not run.</p>
+                : didRun
+                  ? <p className="text-muted">Comment posted.</p>
+                  : <p className="text-muted">Click Run to post your comment.</p>}
           </div>
-        </div>
+        </section>
       </div>
-      <section className="mt-6 border-t border-line pt-5 text-sm leading-relaxed" aria-labelledby="xss-explanation">
-        <h3 id="xss-explanation" className="mb-3 font-semibold">How it works</h3>
+      <section className="border-t border-line p-5 text-sm leading-relaxed sm:p-6" aria-labelledby="xss-explanation">
+        <h3 id="xss-explanation" className="mb-3 font-medium">How it works</h3>
         <div className="space-y-3 text-muted">
           <p>Without protection, the page treats your comment as HTML. In the sample, <code>onerror</code> runs JavaScript when the image fails to load.</p>
           <p>With protection on, HTML characters are escaped and the comment appears as plain text. Try the same payload again to see the difference. Real apps need output encoding appropriate to where the input is displayed.</p>
           <p>The preview runs in an isolated browser sandbox that cannot access this app’s page. External resources are blocked. Demo alerts appear here instead of opening a popup.</p>
         </div>
-        <p className="mt-3">Treating input as text stops this attack.</p>
+        <p className="mt-4 font-medium text-brand">Treating input as text stops this attack.</p>
       </section>
     </div>
   )
@@ -100,6 +133,8 @@ function SqlDemo() {
   const [mode, setMode] = useState<SqlMode>('vulnerable')
   const [result, setResult] = useState<SqlLoginResult | null>(null)
   const [busy, setBusy] = useState(false)
+  const feedbackRef = useRef<HTMLDivElement>(null)
+  useFeedbackMotion(feedbackRef, result, result !== null)
   const query = result?.query ?? buildLoginQuery(username, password, mode)
 
   function changeProtection(checked: boolean) {
@@ -133,42 +168,83 @@ function SqlDemo() {
     setResult(null)
   }
 
+  const pill = !result
+    ? <span className="pill pill-neutral">{busy ? 'Starting database…' : 'Ready'}</span>
+    : result.status === 'success'
+      ? <span className="pill pill-success">Login successful</span>
+      : result.status === 'rejected'
+        ? <span className="pill pill-brand">Login rejected</span>
+        : <span className="pill pill-danger">Query error</span>
+
   return (
-    <div className="panel p-5 sm:p-6">
-      <p className="mb-6 text-sm leading-relaxed text-muted">Try logging in normally, then use the example to bypass the password check.</p>
-      <div className="grid items-start gap-6 md:grid-cols-2">
-        <form onSubmit={(event) => { event.preventDefault(); void submitLogin() }}>
-          <div className="space-y-4">
-            <div><label className="field-label" htmlFor="sql-username">Demo username</label><input id="sql-username" className="input-field font-mono text-sm" value={username} disabled={busy} maxLength={SQL_INPUT_MAX_LENGTH} autoComplete="off" spellCheck={false} onChange={(event) => { setUsername(event.target.value); setResult(null) }} /></div>
-            <div><label className="field-label" htmlFor="sql-password">Demo password</label><input id="sql-password" className="input-field font-mono text-sm" type="text" value={password} disabled={busy} maxLength={SQL_INPUT_MAX_LENGTH} autoComplete="off" spellCheck={false} onChange={(event) => { setPassword(event.target.value); setResult(null) }} /></div>
+    <div className="panel overflow-hidden">
+      <StatusHeader
+        left={<span className="text-xs text-muted">Fictional accounts · fresh in-browser database</span>}
+        right={pill}
+      />
+      <div className="grid items-start gap-6 p-5 sm:p-6 md:grid-cols-2">
+        <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); void submitLogin() }}>
+          <div>
+            <label className="field-label" htmlFor="sql-username">Demo username</label>
+            <input id="sql-username" className="input-field font-mono text-sm" value={username} disabled={busy} maxLength={SQL_INPUT_MAX_LENGTH} autoComplete="off" spellCheck={false} onChange={(event) => { setUsername(event.target.value); setResult(null) }} />
           </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button className="btn-secondary" type="button" disabled={busy} onClick={() => setExample(false)}>Valid student login</button>
-            <button className="btn-secondary" type="button" disabled={busy} onClick={() => setExample(true)}>Try a login bypass</button>
+          <div>
+            <label className="field-label" htmlFor="sql-password">Demo password</label>
+            <input id="sql-password" className="input-field font-mono text-sm" type="text" value={password} disabled={busy} maxLength={SQL_INPUT_MAX_LENGTH} autoComplete="off" spellCheck={false} onChange={(event) => { setPassword(event.target.value); setResult(null) }} />
           </div>
-          <div className="mt-5"><ProtectionToggle checked={mode === 'protected'} onChange={changeProtection} disabled={busy} /></div>
-          <div className="mt-5 flex gap-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            <span className="text-muted">Try:</span>
+            <button className="btn-ghost" type="button" disabled={busy} onClick={() => setExample(false)}>Valid student login</button>
+            <button className="btn-ghost" type="button" disabled={busy} onClick={() => setExample(true)}>Login bypass</button>
+          </div>
+          <ProtectionToggle checked={mode === 'protected'} onChange={changeProtection} disabled={busy} />
+          <div className="flex gap-2">
             <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Running…' : 'Run'}</button>
             <button type="button" className="btn-secondary" onClick={reset} disabled={busy}>Reset</button>
           </div>
         </form>
-        <div>
-          <p className="field-label">{result ? 'Executed query' : 'Login query'}</p>
-          <pre className="code-panel whitespace-pre-wrap break-words p-4 text-sm leading-relaxed"><code>{query}</code></pre>
-          {mode === 'protected' && <div className="mt-3"><p className="field-label">Bound values — treated as data</p><pre className="code-panel whitespace-pre-wrap break-words p-3 text-sm">{JSON.stringify(result?.parameters ?? [username, password], null, 2)}</pre></div>}
-          <div className="mt-4 min-h-20 text-sm leading-relaxed" aria-live="polite" aria-atomic="true">
-            {result?.status === 'success' ? <><p className="font-semibold text-brand">Login successful</p><p className="mt-1">Welcome, {result.user?.displayName}.</p><p className="mt-1 text-muted">Account: {result.user?.username} · {result.user?.role}</p>{result.user?.username === 'admin' && mode === 'vulnerable' && <p className="mt-2 text-[#9a4b20]">You reached the admin account without its password.</p>}</> : result?.status === 'rejected' ? <><p className="font-semibold">Login rejected</p><p className="mt-1 text-muted">{mode === 'protected' ? 'The input was treated as a username, so the bypass failed.' : 'The username and password did not match.'}</p></> : result?.status === 'error' ? <><p className="font-semibold text-[#9a4b20]">Query could not run</p><p className="mt-1 break-words text-muted">{result.error}</p></> : <p className="text-muted">{busy ? 'Starting the local database…' : 'Click Run to try the login.'}</p>}
+        <section className="space-y-4">
+          <div>
+            <p className="field-label">{result ? 'Executed query' : 'Login query'}</p>
+            <pre className="code-panel whitespace-pre-wrap break-words p-3.5 text-sm leading-relaxed"><code>{query}</code></pre>
           </div>
-        </div>
+          {mode === 'protected' && (
+            <div>
+              <p className="field-label">Bound values — treated as data</p>
+              <pre className="code-panel whitespace-pre-wrap break-words p-3 text-sm">{JSON.stringify(result?.parameters ?? [username, password], null, 2)}</pre>
+            </div>
+          )}
+          <div ref={feedbackRef} className="min-h-20 text-sm leading-relaxed" aria-live="polite" aria-atomic="true">
+            {result?.status === 'success' ? (
+              <div data-motion-result className="text-success">
+                <p className="font-medium">Welcome, {result.user?.displayName}</p>
+                <p className="mt-1 text-sm">Account: {result.user?.username} · {result.user?.role}</p>
+                {result.user?.username === 'admin' && mode === 'vulnerable' && <p className="mt-2 text-sm text-danger">The admin account was reached without its password.</p>}
+              </div>
+            ) : result?.status === 'rejected' ? (
+              <div data-motion-result>
+                <p className="font-medium">Login rejected</p>
+                <p className="mt-1 text-muted">{mode === 'protected' ? 'The input was treated as a username, so the bypass failed.' : 'The username and password did not match.'}</p>
+              </div>
+            ) : result?.status === 'error' ? (
+              <div data-motion-result className="text-danger">
+                <p className="font-medium">Query could not run</p>
+                <p className="mt-1 break-words text-sm">{result.error}</p>
+              </div>
+            ) : (
+              <p className="text-muted">Click Run to try the login.</p>
+            )}
+          </div>
+        </section>
       </div>
-      <section className="mt-6 border-t border-line pt-5 text-sm leading-relaxed" aria-labelledby="sql-explanation">
-        <h3 id="sql-explanation" className="mb-3 font-semibold">How it works</h3>
+      <section className="border-t border-line p-5 text-sm leading-relaxed sm:p-6" aria-labelledby="sql-explanation">
+        <h3 id="sql-explanation" className="mb-3 font-medium">How it works</h3>
         <div className="space-y-3 text-muted">
           <p>Without protection, your input is inserted directly into the SQL query. In <code>admin' --</code>, the apostrophe closes the username and the two dashes comment out the password check on that line.</p>
           <p>With protection on, the question marks are placeholders. Bound values are handled separately as data, so the database searches for the exact username instead of executing your input as SQL. Try the same bypass again.</p>
           <p>A real SQLite database runs in your browser with three fictional accounts and resets after every attempt. Readable passwords keep this lesson simple; real apps should store password hashes.</p>
         </div>
-        <p className="mt-3">Treating input as data stops this attack.</p>
+        <p className="mt-4 font-medium text-brand">Treating input as data stops this attack.</p>
       </section>
     </div>
   )

@@ -25,12 +25,12 @@ export function buildXssDocument(comment: string, protectedMode: boolean): strin
 <meta name="referrer" content="no-referrer">
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; padding: 24px; color: #172d29; background: #f7f9f5; font: 14px/1.6 system-ui, sans-serif; }
-  .label { font-size: 10px; letter-spacing: .13em; font-weight: 700; color: #71807a; }
-  h2 { margin: 7px 0 18px; font-size: 19px; letter-spacing: -.04em; }
-  .comment { padding: 17px; border: 1px solid #e1e7e1; border-radius: 12px; background: white; overflow-wrap: anywhere; }
-  .author { font-size: 12px; font-weight: 650; margin-bottom: 8px; }
-  #message { display: none; margin-top: 14px; padding: 12px; border-radius: 10px; border: 1px solid #f5c2a9; background: #fff1e7; color: #884a2c; font-weight: 600; }
+  body { margin: 0; padding: 24px; color: rgba(0, 0, 0, .87); background: #fafafa; font: 14px/1.5 Arial, sans-serif; }
+  .label { font-size: 10px; letter-spacing: .08em; font-weight: 500; color: #3f51b5; }
+  h2 { margin: 8px 0 20px; font-size: 20px; font-weight: 500; letter-spacing: .0075em; }
+  .comment { padding: 16px; border: 1px solid #e0e0e0; border-radius: 4px; background: white; overflow-wrap: anywhere; }
+  .author { font-size: 12px; font-weight: 500; color: rgba(0, 0, 0, .6); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; }
+  #message { display: none; margin-top: 16px; padding: 12px; border-radius: 4px; border: 1px solid #c5cae9; background: #e8eaf6; color: #303f9f; font-weight: 500; }
 </style>
 <script>
   window.alert = function (message) {

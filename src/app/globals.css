@@ -1,34 +1,99 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #172d29;
-  --color-muted: #60716b;
-  --color-brand: #075c48;
-  --color-line: #e1e7e1;
-  --font-sans: "Inter", "Segoe UI", Arial, sans-serif;
+  --color-ink: #212121;
+  --color-muted: #616161;
+  --color-faint: #9e9e9e;
+  --color-brand: #3f51b5;
+  --color-brand-soft: #e8eaf6;
+  --color-paper: #fafafa;
+  --color-surface: #ffffff;
+  --color-line: #e0e0e0;
+  --color-line-strong: #bdbdbd;
+  --color-danger: #c62828;
+  --color-danger-soft: #ffebee;
+  --color-warn: #8a5100;
+  --color-warn-soft: #fff3e0;
+  --color-success: #2e7d32;
+  --color-success-soft: #e8f5e9;
+  --font-sans: "Roboto", "Helvetica", "Arial", sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 @layer base {
-  body { @apply m-0 bg-[#f8faf8] font-sans text-ink antialiased; }
+  body {
+    @apply m-0 bg-paper font-sans text-ink antialiased;
+    letter-spacing: 0.00938em;
+  }
   button:not(:disabled), [role="tab"]:not(:disabled) { cursor: pointer; }
   button, input, textarea, select { @apply outline-none; }
-  button:focus-visible, a:focus-visible { @apply outline-2 outline-offset-4 outline-brand; }
-  input:focus-visible, textarea:focus-visible, select:focus-visible { @apply border-brand ring-3 ring-brand/10; }
-  ::selection { @apply bg-[#cfecd7] text-brand; }
-  input[type="range"] { accent-color: #075c48; }
-  input[type="checkbox"] { accent-color: #075c48; }
+  button:focus-visible, a:focus-visible { @apply outline-2 outline-offset-2 outline-brand; }
+  input:focus-visible, textarea:focus-visible, select:focus-visible { @apply border-brand ring-1 ring-brand; }
+  ::selection { @apply bg-brand-soft text-brand; }
+  input[type="range"], input[type="checkbox"] { accent-color: var(--color-brand); }
   summary { @apply cursor-pointer rounded text-sm font-medium text-ink; }
-  summary:focus-visible { @apply outline-2 outline-offset-4 outline-brand; }
+  summary:focus-visible { @apply outline-2 outline-offset-2 outline-brand; }
+  code, pre { font-family: var(--font-mono); }
 }
 
 @layer components {
-  .panel { @apply rounded-xl border border-line bg-white; }
-  .field-label { @apply mb-2 block text-sm font-medium text-ink; }
-  .input-field { @apply w-full min-w-0 rounded-lg border border-[#dce3db] bg-[#fcfdfb] px-3.5 py-3 text-sm text-ink transition placeholder:text-muted/70; }
-  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#064b3b] disabled:cursor-not-allowed disabled:opacity-45; }
-  .btn-secondary { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-white px-4 py-3 text-sm font-medium text-ink transition hover:border-[#bccdc0] hover:bg-[#f4f7f1] disabled:cursor-not-allowed disabled:opacity-45; }
-  .code-panel { @apply overflow-hidden rounded-lg border border-line bg-[#f4f6f4] font-mono text-sm leading-relaxed text-ink; }
+  .panel {
+    @apply rounded bg-surface;
+    box-shadow: 0 2px 1px -1px rgb(0 0 0 / 20%), 0 1px 1px rgb(0 0 0 / 14%), 0 1px 3px rgb(0 0 0 / 12%);
+  }
+  .field-label { @apply mb-2 block text-sm font-normal text-muted; }
+  .field-hint { @apply mt-1 text-xs leading-5 text-muted; }
+  .input-field { @apply w-full min-w-0 rounded border border-line-strong bg-surface px-3.5 py-3 text-sm text-ink transition-colors placeholder:text-faint disabled:bg-paper disabled:text-muted; }
+  .input-field:not(:disabled):not(:focus-visible):hover { @apply border-ink; }
+  .input-field:focus-visible { @apply border-brand; }
+  .btn-primary, .btn-secondary, .btn-ghost {
+    @apply inline-flex min-h-9 items-center justify-center gap-2 rounded text-sm font-medium uppercase disabled:cursor-not-allowed;
+    line-height: 1.75;
+    letter-spacing: 0.4px;
+    transition: background-color 150ms, box-shadow 150ms, border-color 150ms;
+  }
+  .btn-primary {
+    @apply bg-brand px-4 py-1.5 text-white;
+    box-shadow: 0 3px 1px -2px rgb(0 0 0 / 20%), 0 2px 2px rgb(0 0 0 / 14%), 0 1px 5px rgb(0 0 0 / 12%);
+  }
+  .btn-primary:not(:disabled):hover {
+    @apply bg-[#303f9f];
+    box-shadow: 0 2px 4px -1px rgb(0 0 0 / 20%), 0 4px 5px rgb(0 0 0 / 14%), 0 1px 10px rgb(0 0 0 / 12%);
+  }
+  .btn-primary:disabled { @apply bg-line text-muted shadow-none; }
+  .btn-secondary { @apply border border-line-strong px-[15px] py-[5px] text-ink disabled:border-line disabled:text-faint; }
+  .btn-secondary:not(:disabled):hover { @apply border-ink bg-black/4; }
+  .btn-ghost { @apply px-2 py-1.5 text-brand disabled:text-faint; }
+  .btn-ghost:not(:disabled):hover { @apply bg-brand/4; }
+  .code-panel { @apply overflow-hidden rounded border border-line bg-paper font-mono text-sm leading-relaxed text-ink; }
+  .pill { @apply inline-flex min-h-6 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-normal; }
+  .pill-neutral { @apply bg-[#eeeeee] text-muted; }
+  .pill-brand   { @apply bg-brand-soft text-brand; }
+  .pill-success { @apply bg-success-soft text-success; }
+  .pill-warn    { @apply bg-warn-soft text-warn; }
+  .pill-danger  { @apply bg-danger-soft text-danger; }
+  .lab-app-bar {
+    @apply relative z-10 bg-brand text-white;
+    box-shadow: 0 2px 4px -1px rgb(0 0 0 / 20%), 0 4px 5px rgb(0 0 0 / 14%), 0 1px 10px rgb(0 0 0 / 12%);
+  }
+  .nav-item {
+    @apply relative inline-flex min-h-12 items-center justify-center px-3 py-3 text-sm font-medium uppercase text-muted transition-colors;
+    letter-spacing: 0.4px;
+  }
+  .nav-item:not(:disabled):hover { @apply bg-brand/4; }
+  .nav-item[aria-current="page"] { @apply text-brand; }
+  .nav-item[aria-current="page"]::after {
+    @apply absolute inset-x-0 bottom-0 h-0.5 bg-brand content-[''];
+  }
+  .nav-item[aria-disabled="true"] {
+    @apply cursor-not-allowed text-faint;
+  }
+  .lab-brand-mark { @apply h-9 w-9 shrink-0 text-white; }
+  .lab-brand-mark svg { @apply h-full w-full; }
+  .password-progress { @apply overflow-hidden rounded-none; }
+  .password-progress::-webkit-progress-bar { @apply bg-brand-soft; }
+  .password-progress::-webkit-progress-value { @apply bg-brand; }
+  .password-progress::-moz-progress-bar { @apply bg-brand; }
 }
 
 @media (prefers-reduced-motion: reduce) {
