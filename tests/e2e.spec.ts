@@ -101,19 +101,13 @@ test('dictionary attack finds its default and reports a completed missing list',
 
 test('stopping a worker freezes the comparison count and lets the demo restart', async ({ page }) => {
   await page.getByRole('button', { name: 'Bigger search' }).click()
-  await page.getByRole('button', { name: 'Start demo', exact: true }).click()
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
   const progress = page.getByRole('progressbar', { name: 'Attack progress' })
   await expect.poll(async () => Number(await progress.getAttribute('value'))).toBeGreaterThanOrEqual(10_000)
   await expect(page.getByRole('table', { name: 'Password attempt history' })).toBeVisible()
   expect(await page.locator('tr[data-attempt]').count()).toBeLessThan(100)
-  await page.getByRole('checkbox', { name: 'Follow latest' }).uncheck()
-  await page.getByRole('region', { name: 'All password attempts' }).evaluate(element => {
-    element.scrollTop = 0
-    element.dispatchEvent(new Event('scroll', { bubbles: true }))
-  })
-  await expect(page.locator('tr[data-attempt="1"] td').nth(1)).toHaveText('"a"')
   await page.screenshot({ path: '/tmp/blue-marble-detailed-desktop-running.png', fullPage: true, animations: 'disabled' })
-  await page.getByRole('button', { name: 'Stop demo' }).click()
+  await page.getByRole('button', { name: 'Stop', exact: true }).click()
   await expect(page.getByText('Stopped', { exact: true })).toBeVisible()
   const stoppedCount = await progress.getAttribute('value')
   const history = page.getByRole('table', { name: 'Password attempt history' })
@@ -124,13 +118,18 @@ test('stopping a worker freezes the comparison count and lets the demo restart',
   await expect(progress).toHaveAttribute('value', stoppedCount ?? '')
   await expect(history).toHaveAttribute('aria-rowcount', stoppedHistoryCount ?? '')
   await expect(elapsed).toHaveText(stoppedTime ?? '')
+  await page.getByRole('region', { name: 'All password attempts' }).evaluate(element => {
+    element.scrollTop = 0
+    element.dispatchEvent(new Event('scroll', { bubbles: true }))
+  })
+  await expect(page.locator('tr[data-attempt="1"] td').nth(1)).toHaveText('"a"')
   await page.getByRole('button', { name: 'Reset', exact: true }).click()
   await expect(progress).toHaveAttribute('value', '0')
   await expect(history).toHaveAttribute('aria-rowcount', '1')
   await expect(page.locator('tr[data-attempt]')).toHaveCount(0)
-  await expect(elapsed).toHaveText('0.0 seconds')
+  await expect(elapsed).toHaveText('0.0s')
   await page.getByRole('button', { name: '3-digit PIN' }).click()
-  await page.getByRole('button', { name: 'Start demo', exact: true }).click()
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
   await expect(page.getByText('Found “042” after 153 guesses.', { exact: true })).toBeVisible()
   await expect(history).toHaveAttribute('aria-rowcount', '154')
 })

@@ -22,7 +22,7 @@
 
 @layer base {
   body {
-    @apply m-0 bg-paper font-sans text-ink antialiased;
+    @apply m-0 overflow-hidden bg-paper font-sans text-ink antialiased;
     letter-spacing: 0.00938em;
   }
   button:not(:disabled), [role="tab"]:not(:disabled) { cursor: pointer; }

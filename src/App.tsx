@@ -78,15 +78,9 @@ export default function App() {
   const [navigationOpen, setNavigationOpen] = useState(false)
   const { item } = findActive(demo)
   const demoRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLElement>(null)
   const navigationRef = useRef<HTMLDialogElement>(null)
   useFeedbackMotion(demoRef, demo, true, '[data-motion-demo]')
-
-  useEffect(() => {
-    if (!navigationOpen) return
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = previousOverflow }
-  }, [navigationOpen])
 
   useEffect(() => {
     const desktop = window.matchMedia('(min-width: 1024px)')
@@ -106,55 +100,58 @@ export default function App() {
 
   function selectDemo(nextDemo: Demo) {
     setDemo(nextDemo)
+    contentRef.current?.scrollTo({ top: 0 })
     navigationRef.current?.close()
   }
 
   return (
     <>
       <a href="#lab-content" className="sr-only fixed left-4 top-4 z-50 rounded bg-surface px-4 py-3 text-brand shadow-md focus:not-sr-only">Skip to demo</a>
-      <div className="flex min-h-dvh flex-col">
-        <header className="lab-app-bar">
+      <div className="flex h-dvh flex-col overflow-hidden">
+        <header className="lab-app-bar shrink-0">
           <div className="flex min-h-16 w-full items-center justify-center px-4 py-3">
             <h1 className="text-center text-xl font-medium">Ethical Hacking Lab</h1>
           </div>
         </header>
 
-        <div className="flex w-full flex-1 items-start">
-          <aside className="hidden w-60 shrink-0 self-stretch border-r border-line bg-surface lg:block">
-            <div className="sticky top-0">
-              <h2 className="px-5 pt-6 pb-2 text-sm font-medium">Challenges</h2>
-              <ChallengeNavigation demo={demo} onSelect={selectDemo} />
-            </div>
+        <div className="flex min-h-0 w-full flex-1 overflow-hidden">
+          <aside className="hidden min-h-0 w-60 shrink-0 overflow-y-auto overscroll-contain border-r border-line bg-surface lg:block">
+            <h2 className="px-5 pt-6 pb-2 text-sm font-medium">Challenges</h2>
+            <ChallengeNavigation demo={demo} onSelect={selectDemo} />
           </aside>
 
-          <main id="lab-content" className="min-w-0 flex-1 scroll-mt-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-            <button
-              type="button"
-              onClick={openNavigation}
-              aria-label="Open challenge navigation"
-              aria-haspopup="dialog"
-              aria-controls="challenge-navigation-drawer"
-              aria-expanded={navigationOpen}
-              className="btn-secondary mb-4 lg:hidden"
-            >
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
-              Challenges
-            </button>
-            <header className="mb-5">
-              <h2 className="text-2xl font-normal">{item.name}</h2>
-              <p className="mt-1 text-sm leading-6 text-muted">{item.blurb}</p>
-            </header>
-
-            <div ref={demoRef} data-motion-demo>
-              {demo === 'brute' || demo === 'dictionary'
-                ? <PasswordLab key={demo} method={demo} />
-                : demo === 'prompt'
-                  ? <PromptInjectionLab />
-                  : demo === 'xss' || demo === 'sql'
-                    ? <InjectionLab key={demo} demo={demo} />
-                    : null}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="shrink-0 border-b border-line bg-surface px-4 py-3 sm:px-6 lg:hidden">
+              <button
+                type="button"
+                onClick={openNavigation}
+                aria-label="Open challenge navigation"
+                aria-haspopup="dialog"
+                aria-controls="challenge-navigation-drawer"
+                aria-expanded={navigationOpen}
+                className="btn-secondary"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+                Challenges
+              </button>
             </div>
-          </main>
+            <main ref={contentRef} id="lab-content" tabIndex={-1} className={`min-h-0 min-w-0 flex-1 overscroll-contain px-4 py-6 sm:px-6 sm:py-8 lg:px-8 ${navigationOpen ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+              <header className="mb-5">
+                <h2 className="text-2xl font-normal">{item.name}</h2>
+                <p className="mt-1 text-sm leading-6 text-muted">{item.blurb}</p>
+              </header>
+
+              <div ref={demoRef} data-motion-demo>
+                {demo === 'brute' || demo === 'dictionary'
+                  ? <PasswordLab key={demo} method={demo} />
+                  : demo === 'prompt'
+                    ? <PromptInjectionLab />
+                    : demo === 'xss' || demo === 'sql'
+                      ? <InjectionLab key={demo} demo={demo} />
+                      : null}
+              </div>
+            </main>
+          </div>
         </div>
       </div>
 

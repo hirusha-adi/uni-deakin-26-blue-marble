@@ -114,15 +114,6 @@ function XssDemo() {
           </div>
         </section>
       </div>
-      <section className="border-t border-line p-5 text-sm leading-relaxed sm:p-6" aria-labelledby="xss-explanation">
-        <h3 id="xss-explanation" className="mb-3 font-medium">How it works</h3>
-        <div className="space-y-3 text-muted">
-          <p>Without protection, the page treats your comment as HTML. In the sample, <code>onerror</code> runs JavaScript when the image fails to load.</p>
-          <p>With protection on, HTML characters are escaped and the comment appears as plain text. Try the same payload again to see the difference. Real apps need output encoding appropriate to where the input is displayed.</p>
-          <p>The preview runs in an isolated browser sandbox that cannot access this app’s page. External resources are blocked. Demo alerts appear here instead of opening a popup.</p>
-        </div>
-        <p className="mt-4 font-medium text-brand">Treating input as text stops this attack.</p>
-      </section>
     </div>
   )
 }
@@ -237,15 +228,6 @@ function SqlDemo() {
           </div>
         </section>
       </div>
-      <section className="border-t border-line p-5 text-sm leading-relaxed sm:p-6" aria-labelledby="sql-explanation">
-        <h3 id="sql-explanation" className="mb-3 font-medium">How it works</h3>
-        <div className="space-y-3 text-muted">
-          <p>Without protection, your input is inserted directly into the SQL query. In <code>admin' --</code>, the apostrophe closes the username and the two dashes comment out the password check on that line.</p>
-          <p>With protection on, the question marks are placeholders. Bound values are handled separately as data, so the database searches for the exact username instead of executing your input as SQL. Try the same bypass again.</p>
-          <p>A real SQLite database runs in your browser with three fictional accounts and resets after every attempt. Readable passwords keep this lesson simple; real apps should store password hashes.</p>
-        </div>
-        <p className="mt-4 font-medium text-brand">Treating input as data stops this attack.</p>
-      </section>
     </div>
   )
 }

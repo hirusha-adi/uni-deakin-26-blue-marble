@@ -10,7 +10,6 @@ import {
 import {
   MAX_CHAT_INPUT_LENGTH,
   MAX_CHAT_MESSAGES,
-  MAX_CHAT_TURNS,
   MAX_SESSION_NAME_LENGTH,
   type ChatSession,
 } from '../lib/promptChat'
@@ -299,18 +298,6 @@ export default function PromptInjectionLab() {
 
   return (
     <div className="space-y-4">
-      <section className="panel px-5 py-4 sm:px-6" aria-labelledby="prompt-challenge-title">
-        <h2 id="prompt-challenge-title" className="font-medium">Capture the flag</h2>
-        <p className="mt-1 text-sm leading-6 text-muted">
-          The computer has a secret flag and instructions to keep it hidden. Can you convince it to reveal the flag?
-          Try a technical question, role-play, or a persuasive story.
-        </p>
-        <p className="mt-2 text-xs leading-5 text-muted">
-          Each session has {MAX_CHAT_TURNS} turns ({MAX_CHAT_MESSAGES} messages, counting your messages and the replies).
-          Messages are sent to an AI service; use made-up scenarios and leave out personal information.
-        </p>
-      </section>
-
       <div className="panel grid overflow-hidden md:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="border-b border-line p-4 md:border-r md:border-b-0" aria-label="Chat sessions">
           <form onSubmit={createSession} className="space-y-3">
@@ -471,10 +458,6 @@ export default function PromptInjectionLab() {
           </div>
         </section>
       </div>
-
-      <p className="px-1 text-xs leading-5 text-muted">
-        Prompt injection tries to make an AI follow a user’s instructions instead of its original rules. This challenge uses a real AI, so its replies can vary.
-      </p>
     </div>
   )
 }
