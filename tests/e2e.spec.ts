@@ -54,10 +54,6 @@ test('plain navigation offers each demo once with its settings visible', async (
   for (const name of ['Brute force', 'Dictionary attack', 'XSS demo', 'SQL injection']) {
     await expect(page.getByRole('button', { name, exact: true })).toHaveCount(1)
   }
-  const phishing = page.getByRole('button', { name: /Phishing demo/ })
-  await expect(phishing).toHaveCount(1)
-  await expect(phishing).toBeVisible()
-  await expect(phishing).toBeDisabled()
   await expect(page.getByLabel('Characters to try')).toBeVisible()
   await expect(page.getByLabel('Maximum length')).toBeVisible()
   await expect(page.getByLabel('Demo pace', { exact: true })).toBeVisible()

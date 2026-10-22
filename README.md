@@ -41,9 +41,8 @@ Model availability was checked on 2026-10-23. OpenAI currently lists `gpt-4o-min
 - **XSS:** an unescaped comment executes in an opaque-origin sandboxed iframe. Demo alerts appear in the interface. Protected mode HTML-escapes the same input. The sandbox cannot access the parent app, and content security policies restrict resource requests and external frame navigation.
 - **SQL injection:** [sql.js](https://sql.js.org/) runs real SQLite in WebAssembly against a temporary fictional account table. The username `admin' --` bypasses the vulnerable password check. Protected mode binds the input to placeholders and rejects the same payload. The database is created and closed for every attempt; readable passwords are a teaching simplification.
 - **Prompt injection:** a real chat challenge in which students try to persuade an IT assistant to disclose a fictional flag. Named sessions retain their conversations and enforce the 30-message limit on the server.
-- **Phishing:** a visible, disabled option for a future demonstration.
 
-Choose a demo, edit the example input, and run it. Search settings, timing, progress, strength estimates, and explanations are visible in a plain layout. The password log follows new attempts by default; scroll back to review earlier guesses. It retains the complete run while rendering only the visible rows to keep large searches responsive. Resetting, editing password settings, starting again, or switching demos clears the current password run. Password and injection inputs stay in browser memory; chat conversations are saved in the browser and on the server. Assets, including Roboto, the SQLite WebAssembly file, and zxcvbn dictionaries, are bundled locally.
+Choose a demo from the sidebar, edit the example input, and run it. Search settings, timing, progress, strength estimates, and explanations are visible in a plain layout. The password log follows new attempts by default; scroll back to review earlier guesses. It retains the complete run while rendering only the visible rows to keep large searches responsive. Resetting, editing password settings, starting again, or switching demos clears the current password run. Password and injection inputs stay in browser memory; chat conversations are saved in the browser and on the server. Assets, including Roboto, the SQLite WebAssembly file, and zxcvbn dictionaries, are bundled locally.
 
 ## Check and build
 
@@ -67,7 +66,7 @@ Browser tests use port 3000 by default. If that port is occupied, run `PLAYWRIGH
 - `src/app/layout.tsx`: document metadata and the content security policy.
 - `src/app/page.tsx`: the App Router home page.
 - `src/app/globals.css`: Tailwind styles.
-- `src/App.tsx`: a single demo picker and study tour branding.
+- `src/App.tsx`: a grouped challenge sidebar and study tour branding.
 - `src/components/PasswordLab.tsx`: password configuration, live console, and strength feedback.
 - `src/components/AttemptLog.tsx`: a virtualized, scrollable view of every password comparison.
 - `src/workers/password.worker.ts`: paced execution outside the main UI thread.

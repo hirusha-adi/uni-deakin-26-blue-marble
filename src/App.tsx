@@ -1,18 +1,17 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import PasswordLab from './components/PasswordLab'
 import InjectionLab from './components/InjectionLab'
 import PromptInjectionLab from './components/PromptInjectionLab'
 import { useFeedbackMotion } from './hooks/useFeedbackMotion'
 
-type Demo = 'brute' | 'dictionary' | 'xss' | 'sql' | 'prompt' | 'phishing'
+type Demo = 'brute' | 'dictionary' | 'xss' | 'sql' | 'prompt'
 
 interface DemoItem {
   id: Demo
   name: string
   blurb: string
-  disabled?: boolean
 }
 
 interface Category {
@@ -39,11 +38,6 @@ const categories: Category[] = [
       { id: 'prompt', name: 'Prompt injection', blurb: 'Chat with the IT assistant. Can you make it reveal the hidden flag?' },
     ],
   },
-  {
-    id: 'phishing',
-    name: 'Phishing',
-    items: [{ id: 'phishing', name: 'Coming soon', blurb: 'A deceptive-message demo is in development.', disabled: true }],
-  },
 ]
 
 function findActive(demo: Demo) {
@@ -53,80 +47,135 @@ function findActive(demo: Demo) {
   throw new Error(`Unknown demo: ${demo}`)
 }
 
+function ChallengeNavigation({ demo, onSelect }: { demo: Demo; onSelect: (demo: Demo) => void }) {
+  return (
+    <nav aria-label="Challenges">
+      {categories.map((group) => (
+        <div key={group.id} className="border-t border-line py-3 first:border-t-0">
+          <p className="px-5 pb-2 text-xs font-medium text-muted">{group.name}</p>
+          <ul>
+            {group.items.map((entry) => (
+              <li key={entry.id}>
+                <button
+                  type="button"
+                  aria-current={entry.id === demo ? 'page' : undefined}
+                  onClick={() => onSelect(entry.id)}
+                  className="challenge-nav-item"
+                >
+                  {entry.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  )
+}
+
 export default function App() {
   const [demo, setDemo] = useState<Demo>('brute')
+  const [navigationOpen, setNavigationOpen] = useState(false)
   const { item } = findActive(demo)
   const demoRef = useRef<HTMLDivElement>(null)
+  const navigationRef = useRef<HTMLDialogElement>(null)
   useFeedbackMotion(demoRef, demo, true, '[data-motion-demo]')
+
+  useEffect(() => {
+    if (!navigationOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previousOverflow }
+  }, [navigationOpen])
+
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 1024px)')
+    const closeOnDesktop = () => {
+      if (desktop.matches) navigationRef.current?.close()
+    }
+    desktop.addEventListener('change', closeOnDesktop)
+    return () => desktop.removeEventListener('change', closeOnDesktop)
+  }, [])
+
+  function openNavigation() {
+    const drawer = navigationRef.current
+    if (!drawer || drawer.open) return
+    drawer.showModal()
+    setNavigationOpen(true)
+  }
+
+  function selectDemo(nextDemo: Demo) {
+    setDemo(nextDemo)
+    navigationRef.current?.close()
+  }
 
   return (
     <>
       <a href="#lab-content" className="sr-only fixed left-4 top-4 z-50 rounded bg-surface px-4 py-3 text-brand shadow-md focus:not-sr-only">Skip to demo</a>
-      <header className="lab-app-bar">
-        <div className="mx-auto flex min-h-16 w-full max-w-[1120px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="lab-brand-mark" aria-hidden="true">
-              <svg viewBox="0 0 40 40" fill="none">
-                <circle cx="20" cy="20" r="15" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                <ellipse cx="20" cy="20" rx="6" ry="15" stroke="currentColor" strokeWidth="1.3" />
-                <path d="M5 20h30M8 12h24M8 28h24" stroke="currentColor" strokeWidth="1.3" />
-                <circle cx="33" cy="7" r="4" fill="#c5cae9" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-lg font-medium sm:text-xl">Blue Marble Study Tour 2026</h1>
-              <p className="mt-0.5 text-xs text-white/80">Cybersecurity lab</p>
-            </div>
+      <div className="flex min-h-dvh flex-col">
+        <header className="lab-app-bar">
+          <div className="flex min-h-16 w-full items-center justify-center px-4 py-3">
+            <h1 className="text-center text-xl font-medium">Ethical Hacking Lab</h1>
           </div>
-          <p className="max-w-64 text-xs leading-5 text-white/80">Practice with made-up data.<br />{demo === 'prompt' ? 'Chat messages are sent to OpenAI.' : 'Password, XSS and SQL demos run in your browser.'}</p>
-        </div>
-      </header>
-
-      <nav aria-label="Demos" className="border-b border-line bg-surface">
-        <div className="mx-auto flex w-full max-w-[1120px] flex-wrap gap-x-6 gap-y-2 px-4 pt-3 sm:gap-x-8 sm:px-6">
-          {categories.map((group) => (
-            <div key={group.id}>
-              <p className="px-3 text-xs text-muted">{group.name}</p>
-              <ul className="flex flex-wrap">
-                {group.items.map((entry) => {
-                  const current = entry.id === demo
-                  return (
-                    <li key={entry.id}>
-                      <button
-                        type="button"
-                        disabled={entry.disabled}
-                        aria-current={current ? 'page' : undefined}
-                        aria-disabled={entry.disabled || undefined}
-                        onClick={() => !entry.disabled && setDemo(entry.id)}
-                        className="nav-item"
-                      >
-                        {entry.name}
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </nav>
-
-      <main id="lab-content" className="mx-auto w-full min-w-0 max-w-[1120px] scroll-mt-6 px-4 py-6 sm:px-6 sm:py-8">
-        <header className="mb-5">
-          <h2 className="text-2xl font-normal">{item.name}</h2>
-          <p className="mt-1 text-sm leading-6 text-muted">{item.blurb}</p>
         </header>
 
-        <div ref={demoRef} data-motion-demo>
-          {demo === 'brute' || demo === 'dictionary'
-            ? <PasswordLab key={demo} method={demo} />
-            : demo === 'prompt'
-              ? <PromptInjectionLab />
-              : demo === 'xss' || demo === 'sql'
-                ? <InjectionLab key={demo} demo={demo} />
-                : null}
+        <div className="flex w-full flex-1 items-start">
+          <aside className="hidden w-60 shrink-0 self-stretch border-r border-line bg-surface lg:block">
+            <div className="sticky top-0">
+              <h2 className="px-5 pt-6 pb-2 text-sm font-medium">Challenges</h2>
+              <ChallengeNavigation demo={demo} onSelect={selectDemo} />
+            </div>
+          </aside>
+
+          <main id="lab-content" className="min-w-0 flex-1 scroll-mt-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+            <button
+              type="button"
+              onClick={openNavigation}
+              aria-label="Open challenge navigation"
+              aria-haspopup="dialog"
+              aria-controls="challenge-navigation-drawer"
+              aria-expanded={navigationOpen}
+              className="btn-secondary mb-4 lg:hidden"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+              Challenges
+            </button>
+            <header className="mb-5">
+              <h2 className="text-2xl font-normal">{item.name}</h2>
+              <p className="mt-1 text-sm leading-6 text-muted">{item.blurb}</p>
+            </header>
+
+            <div ref={demoRef} data-motion-demo>
+              {demo === 'brute' || demo === 'dictionary'
+                ? <PasswordLab key={demo} method={demo} />
+                : demo === 'prompt'
+                  ? <PromptInjectionLab />
+                  : demo === 'xss' || demo === 'sql'
+                    ? <InjectionLab key={demo} demo={demo} />
+                    : null}
+            </div>
+          </main>
         </div>
-      </main>
+      </div>
+
+      <dialog
+        ref={navigationRef}
+        id="challenge-navigation-drawer"
+        aria-labelledby="challenge-navigation-title"
+        className="lab-navigation-drawer lg:hidden"
+        onClose={() => setNavigationOpen(false)}
+        onClick={(event) => { if (event.target === event.currentTarget) navigationRef.current?.close() }}
+      >
+        <div className="min-h-full">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4">
+            <h2 id="challenge-navigation-title" className="text-base font-medium">Challenges</h2>
+            <button type="button" onClick={() => navigationRef.current?.close()} aria-label="Close challenge navigation" className="inline-flex h-9 w-9 items-center justify-center rounded text-muted hover:bg-paper">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5"><path d="m6 6 12 12M18 6 6 18" /></svg>
+            </button>
+          </div>
+          <ChallengeNavigation demo={demo} onSelect={selectDemo} />
+        </div>
+      </dialog>
     </>
   )
 }

@@ -76,18 +76,18 @@
     @apply relative z-10 bg-brand text-white;
     box-shadow: 0 2px 4px -1px rgb(0 0 0 / 20%), 0 4px 5px rgb(0 0 0 / 14%), 0 1px 10px rgb(0 0 0 / 12%);
   }
-  .nav-item {
-    @apply relative inline-flex min-h-12 items-center justify-center px-3 py-3 text-sm font-medium uppercase text-muted transition-colors;
-    letter-spacing: 0.4px;
+  .challenge-nav-item {
+    @apply relative flex min-h-12 w-full items-center px-5 py-3 text-left text-sm text-ink transition-colors;
   }
-  .nav-item:not(:disabled):hover { @apply bg-brand/4; }
-  .nav-item[aria-current="page"] { @apply text-brand; }
-  .nav-item[aria-current="page"]::after {
-    @apply absolute inset-x-0 bottom-0 h-0.5 bg-brand content-[''];
+  .challenge-nav-item:hover { @apply bg-brand/4; }
+  .challenge-nav-item[aria-current="page"] { @apply bg-brand-soft font-medium text-brand; }
+  .challenge-nav-item[aria-current="page"]::before {
+    @apply absolute inset-y-0 left-0 w-[3px] bg-brand content-[''];
   }
-  .nav-item[aria-disabled="true"] {
-    @apply cursor-not-allowed text-faint;
+  .lab-navigation-drawer {
+    @apply fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[calc(100vw-40px)] border-0 border-r border-line bg-surface p-0 text-ink shadow-xl;
   }
+  .lab-navigation-drawer::backdrop { @apply bg-black/40; }
   .lab-brand-mark { @apply h-9 w-9 shrink-0 text-white; }
   .lab-brand-mark svg { @apply h-full w-full; }
   .password-progress { @apply overflow-hidden rounded-none; }
