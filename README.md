@@ -84,7 +84,7 @@ docker compose ps
 docker compose logs --tail=100 -f web
 ```
 
-The image and container are named `hirusha-deakin-blue-marble-26-web`. The app runs as user/group `1001:1001`, with the persistent named volume `hirusha-deakin-blue-marble-26-data` mounted at `/app/.data`. Its hostname and network alias are `plzhackme`; other containers on `intranet_1` can reach it at `http://plzhackme:3000`. No host port is published. Attach your reverse proxy to that network and forward to this address, preserving the original `Host` and forwarding `X-Forwarded-Proto: https` for HTTPS requests so chat cookies use the correct origin and security settings.
+The image and container are named `hirusha-deakin-blue-marble-26-web`. The app runs as user/group `1001:1001`, with the persistent named volume `hirusha-deakin-blue-marble-26-data` mounted at `/app/.data`. The container joins the existing `intranet_1` network and listens on port 3000; no host port is published. Attach your reverse proxy to that network and forward to the container, preserving the original `Host` and forwarding `X-Forwarded-Proto: https` for HTTPS requests so chat cookies use the correct origin and security settings.
 
 Stop and remove the container with:
 

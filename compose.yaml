@@ -4,7 +4,6 @@ services:
   web:
     image: hirusha-deakin-blue-marble-26-web:latest
     container_name: hirusha-deakin-blue-marble-26-web
-    hostname: plzhackme
     build:
       context: .
     init: true
@@ -21,9 +20,7 @@ services:
     expose:
       - "3000"
     networks:
-      intranet_1:
-        aliases:
-          - plzhackme
+      - intranet_1
     volumes:
       - type: volume
         source: data
@@ -42,7 +39,6 @@ services:
 networks:
   intranet_1:
     external: true
-    name: intranet_1
 
 volumes:
   data:
