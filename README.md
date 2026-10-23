@@ -37,6 +37,63 @@ The SQLite store requires **a persistent writable local disk**. Set `PROMPT_CHAT
 
 Model availability was checked on 2026-10-23. OpenAI currently lists `gpt-4o-mini` for retirement on January 14, 2027; change `OPENAI_MODEL` and check the request parameters before that date. See the [model documentation](https://developers.openai.com/api/docs/models/gpt-4o-mini) and [deprecation schedule](https://developers.openai.com/api/docs/deprecations).
 
+## Run with Docker
+
+Requires Docker with Compose **2.24+**, which supports optional environment files. The multi-stage image builds and runs with Node.js 24. Compose reads the optional `.env.local` at runtime using standard dotenv parsing, including removal of surrounding quotes; configure the chat variables there as described above. Environment files and local chat data are excluded from the build context and image. No API key or flag is needed during the image build.
+
+The external Docker network `intranet_1` must already exist. Inspect it, and create it only if it is missing:
+
+```bash
+docker network inspect intranet_1
+# If the network was not found:
+docker network create intranet_1
+```
+
+Validate the configuration without printing environment values, then build the image:
+
+```bash
+docker compose config --quiet
+docker compose build web
+```
+
+### Optional: move existing local chats into Docker
+
+The named volume is separate from the host's `.data` directory: existing local chats are **not copied automatically**. To retain them, stop the local app and every process writing to that directory, then run the following from the repository root **before starting the Docker app for the first time**. This copies the complete directory, including the SQLite database, any WAL/SHM files, and the legacy JSON file together. The source remains unchanged; the command refuses to overwrite a nonempty volume.
+
+```bash
+docker run --rm --user 0 \
+  --mount type=bind,src="$PWD/.data",dst=/source,readonly \
+  --mount type=volume,src=hirusha-deakin-blue-marble-26-data,dst=/app/.data \
+  --entrypoint sh hirusha-deakin-blue-marble-26-web:latest -c '
+    set -eu
+    if [ -n "$(find /app/.data -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+      echo "Destination volume is not empty; no files were copied." >&2
+      exit 1
+    fi
+    cp -a /source/. /app/.data/
+    chown -R 1001:1001 /app/.data
+    chmod 700 /app/.data
+  '
+```
+
+### Start and manage the container
+
+```bash
+docker compose up -d
+docker compose ps
+docker compose logs --tail=100 -f web
+```
+
+The image and container are named `hirusha-deakin-blue-marble-26-web`. The app runs as user/group `1001:1001`, with the persistent named volume `hirusha-deakin-blue-marble-26-data` mounted at `/app/.data`. Its hostname and network alias are `plzhackme`; other containers on `intranet_1` can reach it at `http://plzhackme:3000`. No host port is published. Attach your reverse proxy to that network and forward to this address, preserving the original `Host` and forwarding `X-Forwarded-Proto: https` for HTTPS requests so chat cookies use the correct origin and security settings.
+
+Stop and remove the container with:
+
+```bash
+docker compose down
+```
+
+The named volume and saved chats remain after `down`, image rebuilds, and container replacement. `docker compose down -v` also removes the volume and its persistent chat records.
+
 ## Demonstrations
 
 - **Brute force:** a Web Worker tries combinations in shortest-first order. The default PIN `042` is found after 153 actual comparisons. Every comparison is retained in a numbered, scrollable live log. Change the alphabet, maximum length, or teaching pace; stop and reset at any time. The demonstration caps execution at one million guesses and reports when the target is outside the search settings.
@@ -85,4 +142,7 @@ Browser tests use port 3000 by default. If that port is occupied, run `PLAYWRIGH
 - `src/lib/server/promptChatDatabase.ts`: cached SQLite connections, schema/indexes, and one-time legacy JSON import.
 - `src/lib/server/promptChatProvider.ts`: server-only OpenAI calls and system prompt loading.
 - `SYSTEM_PROMPT.md`: editable challenge instructions with a private flag placeholder.
+- `Dockerfile`: multi-stage Node.js 24 build and non-root standalone Next.js runtime.
+- `compose.yaml`: private-network container, runtime environment, health check, and persistent chat volume.
+- `.dockerignore`: excludes secrets, local chat data, and generated files from image builds.
 - `tests/e2e.spec.ts`: browser regression checks.

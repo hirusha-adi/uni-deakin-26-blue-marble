@@ -1,0 +1,23 @@
+# Secrets and private student chat data never enter the build context.
+.env*
+**/.env*
+.data
+**/*.sqlite
+**/*.sqlite-shm
+**/*.sqlite-wal
+
+.git
+node_modules
+.next
+out
+dist
+coverage
+test-results
+playwright-report
+.vscode
+.idea
+*.log
+*.tsbuildinfo
+
+# Recreated by the prebuild script from the installed sql.js package.
+public/sql-wasm.wasm
