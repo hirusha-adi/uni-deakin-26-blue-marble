@@ -33,6 +33,20 @@ function request(endpoint = '', body?: unknown, cookie?: string, extraHeaders: R
   })
 }
 
+function proxiedRequest(endpoint = '', body?: unknown, cookie?: string, extraHeaders: Record<string, string> = {}) {
+  return new NextRequest(`https://0.0.0.0:3000/api/prompt-chat${endpoint}`, {
+    method: body === undefined ? 'GET' : 'POST',
+    headers: {
+      Host: 'lab.plzhack.me',
+      'X-Forwarded-Proto': 'https',
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json', Origin: 'https://lab.plzhack.me' }),
+      ...(cookie ? { Cookie: cookie } : {}),
+      ...extraHeaders,
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+}
+
 async function newSession(name = 'Team Marble') {
   const home = await GET(request())
   const cookie = home.headers.get('set-cookie')!.split(';')[0]
@@ -188,6 +202,58 @@ describe('prompt chat HTTP routes', () => {
     vi.stubEnv('NODE_ENV', 'production')
     const publicHost = await GET(request('', undefined, undefined, { Host: 'classroom.example' }))
     expect(publicHost.headers.get('set-cookie')).toMatch(/; Secure/i)
+  })
+
+  it('keeps HTTPS proxy chats usable with a public host that omits the internal port', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    const home = await GET(proxiedRequest())
+    expect(home.headers.get('set-cookie')).toMatch(/; Secure/i)
+    const cookie = home.headers.get('set-cookie')!.split(';')[0]
+    const { browserId } = await home.json() as { browserId: string }
+
+    const created = await createSession(proxiedRequest('/sessions', { name: 'Proxy classroom' }, cookie))
+    expect(created.status).toBe(201)
+    const { session } = await created.json() as { session: ChatSession }
+    const reply = await sendMessage(proxiedRequest('/messages', {
+      sessionId: session.id, message: 'What is a network?', requestId: randomUUID(),
+    }, cookie))
+    expect(reply.status).toBe(200)
+    const completed = (await reply.json()).session as ChatSession
+    expect(completed.messages.map(({ content }) => content)).toEqual([
+      'What is a network?', 'I can help with IT questions.',
+    ])
+    expect(generateChatReply).toHaveBeenCalledTimes(1)
+
+    const refreshed = await GET(proxiedRequest('', undefined, cookie))
+    expect(refreshed.headers.get('set-cookie')).toBeNull()
+    expect(await refreshed.json()).toMatchObject({ browserId, sessions: [completed] })
+  })
+
+  it('accepts a matching explicit nondefault public HTTPS port', async () => {
+    const created = await createSession(proxiedRequest('/sessions', { name: 'Proxy port classroom' }, undefined, {
+      Host: 'lab.plzhack.me:8443', Origin: 'https://lab.plzhack.me:8443',
+    }))
+    expect(created.status).toBe(201)
+    expect((await created.json()).session.name).toBe('Proxy port classroom')
+    expect(generateChatReply).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['an internal port in the origin', { Origin: 'https://lab.plzhack.me:3000' }],
+    ['a missing public port', { Host: 'lab.plzhack.me:8443', Origin: 'https://lab.plzhack.me' }],
+    ['a different public port', { Host: 'lab.plzhack.me:8443', Origin: 'https://lab.plzhack.me:9443' }],
+    ['an external origin', { Origin: 'https://another.example' }],
+    ['an HTTP origin for HTTPS', { Origin: 'http://lab.plzhack.me' }],
+    ['a cross-site fetch', { 'Sec-Fetch-Site': 'cross-site' }],
+  ] satisfies [string, Record<string, string>][])('rejects proxied requests with %s before the provider', async (_description, headers) => {
+    const { cookie, session } = await newSession()
+    const response = await sendMessage(proxiedRequest('/messages', {
+      sessionId: session.id, message: 'Do not send this to the provider', requestId: randomUUID(),
+    }, cookie, headers))
+    expect(response.status).toBe(403)
+    expect(generateChatReply).not.toHaveBeenCalled()
+    const saved = await GET(request('', undefined, cookie))
+    expect((await saved.json()).sessions[0].messages).toEqual([])
   })
 
   it('isolates saved sessions between browser owners and ignores forged conversation history', async () => {

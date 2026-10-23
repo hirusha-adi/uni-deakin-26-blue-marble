@@ -28,7 +28,12 @@ export function getChatBrowserId(owner: string) {
 function requestUrl(request: NextRequest) {
   const url = new URL(request.url)
   const host = request.headers.get('host')
-  if (host) url.host = host
+  if (host) {
+    // URL.host preserves the old port when Host has none. Discard Next's
+    // internal listen port before applying the public host and optional port.
+    url.port = ''
+    url.host = host
+  }
   return url
 }
 
