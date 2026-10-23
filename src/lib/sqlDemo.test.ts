@@ -1,6 +1,6 @@
 import initSqlJs, { type SqlJsStatic } from 'sql.js'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { runSqlLogin, SQL_ATTACK_USERNAME, SQL_DEMO_PASSWORD, SQL_DEMO_USERNAME } from './sqlDemo'
+import { runSqlLogin, SQL_ATTACK_PAYLOADS, SQL_ATTACK_USERNAME, SQL_DEMO_PASSWORD, SQL_DEMO_USERNAME } from './sqlDemo'
 
 let SQL: SqlJsStatic
 beforeAll(async () => {
@@ -23,6 +23,16 @@ describe('browser SQLite login demonstration', () => {
     const protectedResult = runSqlLogin(SQL, SQL_ATTACK_USERNAME, 'wrong-password', 'protected')
     expect(protectedResult.status).toBe('rejected')
     expect(protectedResult.parameters).toEqual([SQL_ATTACK_USERNAME, 'wrong-password'])
+  })
+
+  it.each(SQL_ATTACK_PAYLOADS)('bypasses vulnerable login with $username / $password but is rejected when protected', ({ username, password }) => {
+    const vulnerable = runSqlLogin(SQL, username, password, 'vulnerable')
+    expect(vulnerable.status).toBe('success')
+    expect(vulnerable.user).toBeDefined()
+
+    const protectedResult = runSqlLogin(SQL, username, password, 'protected')
+    expect(protectedResult.status).toBe('rejected')
+    expect(protectedResult.parameters).toEqual([username, password])
   })
 
   it('rejects incorrect passwords and reports malformed vulnerable queries', () => {

@@ -4,7 +4,7 @@ A beginner-friendly cybersecurity teaching app built with Next.js App Router, Re
 
 ## Run locally
 
-Requires Node.js 22.12+ (or a newer supported release).
+Requires Node.js 22.13+ for the built-in `node:sqlite` database module. Node.js 24+ is recommended; no experimental runtime flag is needed.
 
 ```bash
 npm ci
@@ -21,7 +21,11 @@ Edit [SYSTEM_PROMPT.md](SYSTEM_PROMPT.md) to change the assistant's personality 
 
 Students create named sessions and switch between saved conversations. A session allows **15 exchanges: 15 student messages plus 15 assistant replies, for 30 messages total**. The server reserves a turn before calling OpenAI, blocks competing requests and further turns at the limit, and deduplicates retries. Failed or unfinished API replies do not use a turn. At the limit, the message box is disabled and students are prompted to create a new session. The introductory UI text does not count as a chat message.
 
-Each chat starts with a random UUID. Its conversation is saved in that student's browser using localStorage and backed up privately in `.data/prompt-chat-sessions.json`, outside the public directory and ignored by Git. An anonymous, HttpOnly cookie identifies the browser; no login is needed. The API lists and updates only sessions owned by that cookie, even if someone supplies another session's UUID or a forged browser identifier.
+Each chat starts with a random UUID. Its conversation is saved in that student's browser using localStorage and backed up privately in the native SQLite database `.data/prompt-chat-sessions.sqlite`, outside the public directory and ignored by Git. An anonymous, HttpOnly cookie identifies the browser; no login is needed. The API lists and updates only sessions owned by that cookie, even if someone supplies another session's UUID or a forged browser identifier.
+
+SQLite stores sessions, messages, and turn reservations in separate tables, with indexes for owner-scoped access. Reads and updates touch the relevant rows instead of reading and rewriting every student's conversation. Write-ahead logging (WAL) and transactions coordinate concurrent requests, including requests from multiple Node.js processes on the same host sharing the same database file. Turn reservations preserve the existing message limit and retry handling across those processes.
+
+On first use, an existing `prompt-chat-sessions.json` beside the database is imported automatically in a single transaction. The original JSON file is preserved, and the completed import is recorded so restarting the app does not import it again. New conversations and updates are written only to SQLite.
 
 The local copy is tied to a public browser namespace derived from the private cookie. The app verifies that namespace with the server before restoring the saved selection, so changing or clearing the cookie cannot display a previous browser identity's cached chats. Server replies remain authoritative for messages and the 30-message limit; editing localStorage cannot add turns or overwrite the server backup. If local storage is unavailable or full, the chat keeps working with its server copy and shows a brief notice.
 
@@ -29,7 +33,7 @@ Students can play simultaneously on their own computers. Each device has its own
 
 Refreshing or restarting the server preserves sessions. Clearing the cookie or changing browsers starts a different session list; there is no account-based recovery. Messages and conversation history are sent to OpenAI with `store: false`; students should use fictional scenarios.
 
-The file store requires **one Node.js process and a persistent writable disk**. Set `PROMPT_CHAT_DATA_DIR` to a private persistent directory when hosting. For multiple server instances or serverless deployments, replace it with a shared transactional database. Deploy `SYSTEM_PROMPT.md` with the server; Next's file tracing includes it for the chat endpoint. Keep the data directory private, and remove old workshop transcripts when no longer needed.
+The SQLite store requires **a persistent writable local disk**. Set `PROMPT_CHAT_DATA_DIR` to a private persistent directory when hosting; same-host Node.js processes can share its database. Separate hosts or deployments with ephemeral serverless storage need a suitable database service or hosting that provides the required persistent database access. Deploy `SYSTEM_PROMPT.md` with the server; Next's file tracing includes it for the chat endpoint. Keep the data directory private, and remove old workshop transcripts when no longer needed.
 
 Model availability was checked on 2026-10-23. OpenAI currently lists `gpt-4o-mini` for retirement on January 14, 2027; change `OPENAI_MODEL` and check the request parameters before that date. See the [model documentation](https://developers.openai.com/api/docs/models/gpt-4o-mini) and [deprecation schedule](https://developers.openai.com/api/docs/deprecations).
 
@@ -53,7 +57,7 @@ npm run build
 npm start
 ```
 
-Unit tests cover password enumeration, list transformations, SQL protection, XSS output encoding, chat ownership and persistence, browser-copy validation and isolation, concurrent turn limits, retries, API validation, and safe provider failures. Provider tests mock OpenAI and do not spend API credits. Run browser QA only when explicitly requested; the existing `npm run test:e2e` script uses Playwright.
+Unit tests cover password enumeration, list transformations, SQL protection, XSS output encoding, SQLite chat ownership and persistence, browser-copy validation and isolation, concurrent turn limits, retries, API validation, and safe provider failures. Provider tests mock OpenAI and do not spend API credits. Run browser QA only when explicitly requested; the existing `npm run test:e2e` script uses Playwright.
 
 `npm run build` creates the production Next.js application in `.next/`; `npm start` serves it on port 3000. `npm run preview` serves the production build on port 4173. Next.js serves the page, local assets, and the chat API routes. Password attempts, SQLite queries, and sandboxed JavaScript execute in the browser.
 
@@ -77,7 +81,8 @@ Browser tests use port 3000 by default. If that port is occupied, run `PLAYWRIGH
 - `src/components/PromptInjectionLab.tsx`: chat, named sessions, message counter, and session-limit UI.
 - `src/lib/promptChatBrowser.ts`: browser-local conversation copy, owner namespace checks, and safe storage handling.
 - `src/app/api/prompt-chat/`: private session listing, creation, and message endpoints.
-- `src/lib/server/promptChatStore.ts`: private persistent sessions, owner checks, and turn reservation.
+- `src/lib/server/promptChatStore.ts`: owner-scoped SQLite queries, transactional turn reservation, limits, and retries.
+- `src/lib/server/promptChatDatabase.ts`: cached SQLite connections, schema/indexes, and one-time legacy JSON import.
 - `src/lib/server/promptChatProvider.ts`: server-only OpenAI calls and system prompt loading.
 - `SYSTEM_PROMPT.md`: editable challenge instructions with a private flag placeholder.
 - `tests/e2e.spec.ts`: browser regression checks.

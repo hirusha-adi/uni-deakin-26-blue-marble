@@ -17,6 +17,13 @@ export interface SqlLoginResult {
 }
 
 export const SQL_ATTACK_USERNAME = "admin' --"
+export const SQL_ATTACK_PAYLOADS = [
+  { username: SQL_ATTACK_USERNAME, password: 'anything' },
+  { username: "missing' OR 1=1 --", password: 'anything' },
+  { username: "missing' OR 'a'='a' --", password: 'anything' },
+  { username: "student' --", password: 'anything' },
+  { username: 'student', password: "' OR 1=1 --" },
+] as const
 export const SQL_DEMO_USERNAME = 'student'
 export const SQL_DEMO_PASSWORD = 'marble2026'
 export const SQL_INPUT_MAX_LENGTH = 250

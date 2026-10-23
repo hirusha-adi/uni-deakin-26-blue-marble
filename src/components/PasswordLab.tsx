@@ -153,8 +153,7 @@ export default function PasswordLab({ method }: { method: AttackMethod }) {
   const passwordField = (
     <div>
       <label htmlFor="demo-password" className="field-label">Password</label>
-      <input id="demo-password" type="text" autoComplete="off" spellCheck={false} maxLength={64} disabled={running} value={target} onChange={(event) => { reset(); setTarget(event.target.value) }} className="input-field font-mono" aria-describedby="demo-password-help" />
-      <p id="demo-password-help" className="field-hint">Use a made-up password.</p>
+      <input id="demo-password" type="text" autoComplete="off" spellCheck={false} maxLength={64} disabled={running} value={target} onChange={(event) => { reset(); setTarget(event.target.value) }} className="input-field font-mono" />
     </div>
   )
   const presetButtons = (
@@ -221,7 +220,7 @@ export default function PasswordLab({ method }: { method: AttackMethod }) {
             {settingsError && <div className="sm:col-span-3">{settingsError}</div>}
           </section>
         )}
-        <div className={`grid ${brute ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]' : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]'}`}>
+        <div className={`grid ${brute ? 'lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]' : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]'}`}>
           <section aria-labelledby={brute ? 'password-settings-heading' : 'dictionary-wordlist-heading'} className={brute ? 'min-w-0 space-y-4 p-5 sm:p-6' : 'flex min-w-0 flex-col p-5 sm:p-6'}>
             {brute ? (
               <>

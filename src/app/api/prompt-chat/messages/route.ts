@@ -10,7 +10,7 @@ export const maxDuration = 60
 export async function POST(request: NextRequest) {
   const owner = getChatOwner(request)
   const store = getChatStore()
-  let pending: { sessionId: string; requestId: string } | undefined
+  let pending: { sessionId: string; requestId: string; reservationId: string } | undefined
   try {
     const { sessionId, message, requestId } = await readChatBody(request)
     if (!isChatId(sessionId) || !isChatId(requestId)) {
@@ -21,15 +21,15 @@ export async function POST(request: NextRequest) {
     }
     const turn = await store.beginTurn(owner, sessionId, message.trim(), requestId)
     if (turn.completed) return chatJson(request, owner, { session: turn.session })
-    pending = { sessionId, requestId }
+    pending = { sessionId, requestId, reservationId: turn.reservationId }
     const reply = await generateChatReply(turn.history)
-    const session = await store.completeTurn(owner, sessionId, requestId, reply.content, reply.won)
+    const session = await store.completeTurn(owner, sessionId, requestId, reply.content, reply.won, turn.reservationId)
     return chatJson(request, owner, { session })
   } catch (problem) {
     let session: ChatSession | undefined
     if (pending) {
       try {
-        session = await store.failTurn(owner, pending.sessionId, pending.requestId)
+        session = await store.failTurn(owner, pending.sessionId, pending.requestId, pending.reservationId)
       } catch {
         // A failed disk write must not replace the original safe error with internal details.
       }

@@ -1,13 +1,15 @@
 import { randomUUID } from 'node:crypto'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET } from '../../app/api/prompt-chat/route'
 import { POST as createSession } from '../../app/api/prompt-chat/sessions/route'
 import { POST as sendMessage } from '../../app/api/prompt-chat/messages/route'
 import { ChatProviderError, generateChatReply } from './promptChatProvider'
+import { closeChatStores } from './promptChatStore'
 import type { ChatSession } from '../promptChat'
 
 vi.mock('server-only', () => ({}))
@@ -52,6 +54,8 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
+  vi.useRealTimers()
+  closeChatStores()
   vi.unstubAllEnvs()
   await rm(directory, { recursive: true, force: true })
 })
@@ -112,14 +116,21 @@ describe('prompt chat HTTP routes', () => {
     expect((await guessedId.json()).browserId).toBe(second.browserId)
     expect(generateChatReply).toHaveBeenCalledTimes(1)
 
-    const backup = JSON.parse(await readFile(path.join(directory, 'prompt-chat-sessions.json'), 'utf8'))
-    expect(backup.sessions).toHaveLength(2)
-    expect(backup.sessions.find((session: ChatSession) => session.id === first.session.id)).toMatchObject({
-      ownerId: first.cookie.split('=')[1], messages: completed.messages,
-    })
-    expect(backup.sessions.find((session: ChatSession) => session.id === second.session.id)).toMatchObject({
-      ownerId: second.cookie.split('=')[1], messages: [],
-    })
+    const backup = new DatabaseSync(path.join(directory, 'prompt-chat-sessions.sqlite'), { readOnly: true })
+    try {
+      expect(backup.prepare('SELECT count(*) AS count FROM chat_sessions').get()).toMatchObject({ count: 2 })
+      expect(backup.prepare('SELECT owner_id FROM chat_sessions WHERE id = ?').get(first.session.id)).toMatchObject({
+        owner_id: first.cookie.split('=')[1],
+      })
+      expect(backup.prepare('SELECT owner_id FROM chat_sessions WHERE id = ?').get(second.session.id)).toMatchObject({
+        owner_id: second.cookie.split('=')[1],
+      })
+      expect(backup.prepare('SELECT id, role, content FROM chat_messages WHERE session_id = ? ORDER BY ordinal').all(first.session.id))
+        .toEqual(completed.messages)
+      expect(backup.prepare('SELECT id FROM chat_messages WHERE session_id = ?').all(second.session.id)).toEqual([])
+    } finally {
+      backup.close()
+    }
   })
 
   it('lets students on separate browsers chat concurrently while keeping their replies separate', async () => {
@@ -257,6 +268,51 @@ describe('prompt chat HTTP routes', () => {
     expect(generateChatReply).toHaveBeenCalledTimes(1)
     finish({ content: 'First reply', won: false })
     expect((await first).status).toBe(200)
+  })
+
+  it('keeps a retried turn intact when the expired HTTP request returns late', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-23T00:00:00.000Z'))
+    const { cookie, session } = await newSession()
+    const body = { sessionId: session.id, message: 'Retry this question', requestId: randomUUID() }
+    let originalStarted!: () => void
+    let retryStarted!: () => void
+    let originalReply!: (reply: { content: string; won: boolean }) => void
+    let retryReply!: (reply: { content: string; won: boolean }) => void
+    const originalEntered = new Promise<void>((resolve) => { originalStarted = resolve })
+    const retryEntered = new Promise<void>((resolve) => { retryStarted = resolve })
+    vi.mocked(generateChatReply)
+      .mockImplementationOnce(() => {
+        originalStarted()
+        return new Promise((resolve) => { originalReply = resolve })
+      })
+      .mockImplementationOnce(() => {
+        retryStarted()
+        return new Promise((resolve) => { retryReply = resolve })
+      })
+
+    const original = sendMessage(request('/messages', body, cookie))
+    await originalEntered
+    vi.setSystemTime(new Date('2026-10-23T00:01:30.000Z'))
+    const retry = sendMessage(request('/messages', body, cookie))
+    await retryEntered
+    originalReply({ content: 'Expired winning reply', won: true })
+    expect((await original).status).toBe(409)
+    const stillWaiting = await GET(request('', undefined, cookie))
+    expect((await stillWaiting.json()).sessions[0]).toMatchObject({
+      busy: true, won: false,
+      messages: [{ id: expect.any(String), role: 'user', content: body.message }],
+    })
+    retryReply({ content: 'Current reply', won: false })
+    const completed = await retry
+    expect(completed.status).toBe(200)
+    expect((await completed.json()).session).toMatchObject({
+      busy: false, won: false,
+      messages: [
+        { id: expect.any(String), role: 'user', content: body.message },
+        { id: expect.any(String), role: 'assistant', content: 'Current reply' },
+      ],
+    })
   })
 
   it('rejects cross-origin, oversized, and invalid messages before the provider', async () => {
